@@ -54,9 +54,9 @@ ks_normal <- function(data) {
   # generate test statistic
   D <- max(abs(empiricalCDF - pnorm(data)))
   # R can not deal with infinite, so I use 1000 instead
-  upper_limit <- 1000
+  n <- 1000
   # calculate p-value
-  p_value <- sqrt(2 * pi) / D * sum(exp(-((2 * (1:upper_limit) - 1)^2 * pi^2) / (8 * D^2)))
+  p_value <- sqrt(2 * pi) / D * sum(exp(-((2 * (1:n) - 1)^2 * pi^2) / (8 * D^2)))
   # return results
   return(list(D = D, p_value = p_value))
 }
@@ -90,10 +90,47 @@ q2_scatter <- ggplot(data, aes(x = x, y = y)) +
 print(q2_scatter)
 dev.off()
 
-# 
+# Define OLS loss function
+# Loss function is used to measure the differences between
+# predicted value and real value.
 
+loss_function <- function(theta, x, y){
+  # This function is used to define OLS loss function
+  
+  # Parameters:
+  # - theta: parameter vector, in this case is the intercept and coefficients.
+  # - x: independent variables value, in this case is a matrix.
+  # - y: dependent variable value, in this case is a vector.
+  
+  # Returns:
+  # - loss: the differences between predicted values and observed values.
+  # in this case is the sum of squared residuals (SSR).
+  predicted <- theta[1] + theta[2] * x # y = a + bx
+  loss <- sum((predicted - y)^2) # SSR formula
+  return(loss)
+}
+
+# Define parameters we need in optim function. 
+# Optim function can used to minimize or maximize an object function
+
+initial_coef <- c(0, 0) # set the default slope and intercept to 0
+method <- "BFGS" # define the method as BFGS
+
+newton_results <- optim(initial_coef, 
+                loss_function, # use the loss function
+                x = data$x, y = data$y, # set the variables values
+                method) 
+
+# print Newton-Raphson results
+cat("In Newton-Raphson algorithm, my results are: \n")
+cat("The intercept is:", newton_results$par[1], "\n")
+cat("The slope is:", newton_results$par[2], "\n")
 
 # Finally, let's compare with lm methods.
-lm_method <- lm(y ~ x, data)
-summary(lm_method)
+lm_results <- lm(y ~ x, data)
+summary(lm_results)
+# print OLS results
+cat("In lm methods, my results are: \n")
+cat("The intercept is:", lm_results$coefficient[1], "\n")
+cat("The slope is:", lm_results$coefficient[2], "\n")
 

@@ -10,6 +10,7 @@
 \usepackage{listings}
 \usepackage{graphicx} % insert picture
 \usepackage{hyperref}
+\usepackage{array} % adjust table space
 
 
 \definecolor{github-light-bg}{RGB}{255, 255, 255}
@@ -156,5 +157,50 @@ $$p(D \leq x) \frac{\sqrt {2\pi}}{x} \sum _{k=1}^{\infty }e^{-(2k-1)^{2}\pi ^{2}
 	\includegraphics[scale=.5]{q2_plot1.pdf} 
 	\caption{Scatter - Problem 2 data}
 \end{figure}
-\noindent 
+\noindent To use Newton-Raphson algorithm in \texttt{R}, firstly define a loss function, secondly set default slope and intercept both as 0 according to the scatter, then use BFGS method in optim function. Here are codes:\\
+
+\lstinputlisting[language=R, firstline=93,lastline=122]{PS01_answers_Chenxi.R} 
+
+\noindent The slope and coefficient were stored in par vector in newton\_results variable, so use this code to print: \\
+
+\lstinputlisting[language=R, firstline=124,lastline=127]{PS01_answers_Chenxi.R} 
+
+\noindent We got the answers:
+\begin{verbatim}
+	In Newton-Raphson algorithm, my results are: 
+	The intercept is: 0.138529 
+	The slope is: 2.726599 
+\end{verbatim}
+
+\noindent To show the equivalent results with \texttt{lm}, I use these codes:\\
+\lstinputlisting[language=R, firstline=129,lastline=135]{PS01_answers_Chenxi.R} 
+
+\noindent We got the answers:
+\begin{verbatim}
+	In lm methods, my results are: 
+	The intercept is: 0.1391874 
+	The slope is: 2.726699 
+\end{verbatim}
+\noindent Create a table to see the differences between Newton-Raphson Algorithm and lm Methods:
+\begin{center}
+	\begin{tabular} { |> {\centering\arraybackslash}p{5cm} |> {\centering\arraybackslash}p{3cm} |> {\centering\arraybackslash}p{3cm} |}
+		\hline
+		& \textbf{Intercept} & \textbf{Slope} \\
+		\hline
+		\textbf{Newton-Raphson Algorithm} & 0.138529 & 2.726599 \\
+		\hline
+		\textbf{lm Methods} & 0.1391874 & 2.726699  \\
+		\hline
+	\end{tabular}
+\end{center}
+\noindent Compared with the Newton-Raphson Algorithm intercept ($\approx$ 0.14) and slope ($\approx$ 2.73), lm methods' intercept ($\approx$ 0.14) and slope ($\approx$ 2.73) is near the same. And we can write our regression formula like this: \\
+
+\noindent $y = 0.14 + 2.73 x$ \\
+
+\noindent \noindent Here is the explain of these 2 methods get the similar but not the same results:\\
+
+\begin{itemize}
+	\item  Due to differences in numerical computation precision, computational methods, and implementation details of the optimization algorithms, minor differences may arise. These differences are typically negligible and do not significantly affect the final model fitting results.\\
+\end{itemize}
+
 \end{document}
