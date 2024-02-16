@@ -1,62 +1,60 @@
-\documentclass[12pt,letterpaper]{article}
-\usepackage{graphicx,textcomp}
-\usepackage{natbib}
-\usepackage{setspace}
-\usepackage{fullpage}
-\usepackage{color}
-\usepackage[reqno]{amsmath}
-\usepackage{amsthm}
-\usepackage{fancyvrb}
-\usepackage{amssymb,enumerate}
-\usepackage[all]{xy}
-\usepackage{endnotes}
-\usepackage{lscape}
-\newtheorem{com}{Comment}
-\usepackage{float}
-\usepackage{hyperref}
-\newtheorem{lem} {Lemma}
-\newtheorem{prop}{Proposition}
-\newtheorem{thm}{Theorem}
-\newtheorem{defn}{Definition}
-\newtheorem{cor}{Corollary}
-\newtheorem{obs}{Observation}
-\usepackage[compact]{titlesec}
-\usepackage{dcolumn}
-\usepackage{tikz}
-\usetikzlibrary{arrows}
-\usepackage{multirow}
+\documentclass{article} % Document class
+
+% Packages
+\usepackage[utf8]{inputenc} % Input encoding
+\usepackage[T1]{fontenc}    % Output encoding
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amssymb}
 \usepackage{xcolor}
-\newcolumntype{.}{D{.}{.}{-1}}
-\newcolumntype{d}[1]{D{.}{.}{#1}}
-\definecolor{light-gray}{gray}{0.65}
-\usepackage{url}
 \usepackage{listings}
-\usepackage{color}
+\usepackage{graphicx} % insert picture
+\usepackage{hyperref}
+\usepackage{array} % adjust table space
 
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
-\lstdefinestyle{mystyle}{
-	backgroundcolor=\color{backcolour},   
-	commentstyle=\color{codegreen},
-	keywordstyle=\color{magenta},
-	numberstyle=\tiny\color{codegray},
-	stringstyle=\color{codepurple},
-	basicstyle=\footnotesize,
-	breakatwhitespace=false,         
-	breaklines=true,                 
-	captionpos=b,                    
-	keepspaces=true,                 
-	numbers=left,                    
-	numbersep=5pt,                  
-	showspaces=false,                
+\definecolor{github-light-bg}{RGB}{255, 255, 255}
+\definecolor{github-light-fg}{RGB}{3, 102, 214}
+\definecolor{github-light-yellow}{RGB}{128, 102, 0}
+\definecolor{github-light-orange}{RGB}{170, 0, 17}
+\definecolor{github-light-purple}{RGB}{102, 51, 153}
+\definecolor{github-light-cyan}{RGB}{0, 128, 128}
+\definecolor{github-light-green}{RGB}{0, 128, 0}
+\definecolor{github-light-red}{RGB}{204, 0, 0}
+
+\lstdefinestyle{githublight}{
+	backgroundcolor=\color{github-light-bg},
+	basicstyle=\color{github-light-fg}\ttfamily,
+	commentstyle=\color{github-light-green},
+	keywordstyle=\color{github-light-purple},
+	numberstyle=\tiny\color{github-light-fg},
+	stringstyle=\color{github-light-cyan},
+	identifierstyle=\color{github-light-orange},
+	emphstyle=\color{github-light-red},
+	emph={[2]TRUE,FALSE},
+	emphstyle={[2]\color{github-light-yellow}},
+	breaklines=true,
+	breakatwhitespace=true,
+	numbers=left,
+	numbersep=5pt,
+	stepnumber=1,
 	showstringspaces=false,
-	showtabs=false,                  
-	tabsize=2
+	frame=single,
+	rulecolor=\color{github-light-fg},
+	framerule=0.5pt,
+	tabsize=4,
+	columns=flexible,
+	extendedchars=true,
+	inputencoding=utf8,
+	upquote=true,
 }
-\lstset{style=mystyle}
+
+\lstset{style=githublight}
+
+% Page layout settings
+\usepackage[a4paper, margin=2.5cm]{geometry} % Set paper size and margins
+
+
 \newcommand{\Sref}[1]{Section~\ref{#1}}
 \newtheorem{hyp}{Hypothesis}
 

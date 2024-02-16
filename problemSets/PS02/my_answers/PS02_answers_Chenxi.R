@@ -38,3 +38,20 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # load data
 load(url("https://github.com/ASDS-TCD/StatsII_Spring2024/blob/main/datasets/climateSupport.RData?raw=true"))
+
+# check the details of the dataframe
+summary(climateSupport)
+# check if the type of variable is factor
+var_types <- sapply(climateSupport, str)
+
+# because the response variable is binary, so choose logistic regression here
+# and I found glm's logistic regression can transfer categorical variable into
+# dummy variable automatically, so I didn't write the transfer code.
+
+q1_mod <- glm(choice ~ ., # Y and Xs
+              data = climateSupport, # select dataset
+              family = "binomial") # select method as binomial
+# summary the model
+summary(q1_mod)
+
+
