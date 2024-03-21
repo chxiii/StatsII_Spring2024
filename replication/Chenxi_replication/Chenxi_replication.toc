@@ -1,0 +1,2 @@
+\beamer@sectionintoc {1}{Background of the study}{2}{0}{1}
+\beamer@sectionintoc {2}{Second Section}{4}{0}{2}
