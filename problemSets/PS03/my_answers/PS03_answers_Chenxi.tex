@@ -1,0 +1,257 @@
+\documentclass[12pt]{article} % Document class
+
+% Packages
+\usepackage[utf8]{inputenc} % Input encoding
+\usepackage[T1]{fontenc}    % Output encoding
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx} % insert picture
+\usepackage{hyperref}
+\usepackage{array} % adjust table space
+\usepackage{amsmath} % use amsmath to write the formula
+
+
+\definecolor{github-light-bg}{RGB}{255, 255, 255}
+\definecolor{github-light-fg}{RGB}{3, 102, 214}
+\definecolor{github-light-yellow}{RGB}{128, 102, 0}
+\definecolor{github-light-orange}{RGB}{170, 0, 17}
+\definecolor{github-light-purple}{RGB}{102, 51, 153}
+\definecolor{github-light-cyan}{RGB}{0, 128, 128}
+\definecolor{github-light-green}{RGB}{0, 128, 0}
+\definecolor{github-light-red}{RGB}{204, 0, 0}
+
+\lstdefinestyle{githublight}{
+	backgroundcolor=\color{github-light-bg},
+	basicstyle=\color{github-light-fg}\ttfamily,
+	commentstyle=\color{github-light-green},
+	keywordstyle=\color{github-light-purple},
+	numberstyle=\tiny\color{github-light-fg},
+	stringstyle=\color{github-light-cyan},
+	identifierstyle=\color{github-light-orange},
+	emphstyle=\color{github-light-red},
+	emph={[2]TRUE,FALSE},
+	emphstyle={[2]\color{github-light-yellow}},
+	breaklines=true,
+	breakatwhitespace=true,
+	numbers=left,
+	numbersep=5pt,
+	stepnumber=1,
+	showstringspaces=false,
+	frame=single,
+	rulecolor=\color{github-light-fg},
+	framerule=0.5pt,
+	tabsize=4,
+	columns=flexible,
+	extendedchars=true,
+	inputencoding=utf8,
+	upquote=true,
+}
+
+\lstset{style=githublight}
+
+% Page layout settings
+\usepackage[a4paper, margin=2.5cm]{geometry} % Set paper size and margins
+
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newtheorem{hyp}{Hypothesis}
+
+\title{Problem Set 3}
+\date{Due: March 24, 2024}
+\author{Applied Stats II}
+
+
+\begin{document}
+	\maketitle
+	\section*{Instructions}
+	\begin{itemize}
+	\item Please show your work! You may lose points by simply writing in the answer. If the problem requires you to execute commands in \texttt{R}, please include the code you used to get your answers. Please also include the \texttt{.R} file that contains your code. If you are not sure if work needs to be shown for a particular problem, please ask.
+\item Your homework should be submitted electronically on GitHub in \texttt{.pdf} form.
+\item This problem set is due before 23:59 on Sunday March 24, 2024. No late assignments will be accepted.
+	\end{itemize}
+
+	\vspace{.25cm}
+\section*{Question 1}
+\vspace{.25cm}
+\noindent We are interested in how governments' management of public resources impacts economic prosperity. Our data come from \href{https://www.researchgate.net/profile/Adam_Przeworski/publication/240357392_Classifying_Political_Regimes/links/0deec532194849aefa000000/Classifying-Political-Regimes.pdf}{Alvarez, Cheibub, Limongi, and Przeworski (1996)} and is labelled \texttt{gdpChange.csv} on GitHub. The dataset covers 135 countries observed between 1950 or the year of independence or the first year forwhich data on economic growth are available ("entry year"), and 1990 or the last year for which data on economic growth are available ("exit year"). The unit of analysis is a particular country during a particular year, for a total $>$ 3,500 observations. 
+
+\begin{itemize}
+	\item
+	Response variable: 
+	\begin{itemize}
+		\item \texttt{GDPWdiff}: Difference in GDP between year $t$ and $t-1$. Possible categories include: "positive", "negative", or "no change"
+	\end{itemize}
+	\item
+	Explanatory variables: 
+	\begin{itemize}
+		\item
+		\texttt{REG}: 1=Democracy; 0=Non-Democracy
+		\item
+		\texttt{OIL}: 1=if the average ratio of fuel exports to total exports in 1984-86 exceeded 50\%; 0= otherwise
+	\end{itemize}
+	
+\end{itemize}
+\newpage
+\noindent Please answer the following questions:
+
+\begin{enumerate}
+\item Construct and interpret an unordered multinomial logit with \texttt{GDPWdiff} as the output and "no change" as the reference category, including the estimated cutoff points and coefficients.
+\par
+\noindent Run the \texttt{R} code:
+\lstinputlisting[language=R, firstline=43,lastline=73]{PS03_answers_Chenxi.R} 
+
+\noindent And we will get the regression results from \texttt{R}:
+
+\newpage
+
+\begin{table}[h] 
+\centering 
+\caption{Outcome variable is \texttt{GDPWdiff} and the explanatory variables are \texttt{REG} and \texttt{OIL}} 
+  \begin{tabular}{@{\extracolsep{5pt}}lcc} 
+  \\[-1.8ex]\hline 
+  \hline \\[-1.8ex] 
+   & \multicolumn{2}{c}{\textit{Dependent variable:}} \\ 
+  \cline{2-3} 
+  \\[-1.8ex] & negative & positive \\ 
+  \\[-1.8ex] & (1) & (2)\\ 
+  \hline \\[-1.8ex] 
+   REG & 1.379$^{*}$ & 1.769$^{**}$ \\ 
+	& (0.769) & (0.767) \\ 
+   OIL & 4.784 & 4.576 \\ 
+	& (6.885) & (6.885) \\ 
+   Constant & 3.805$^{***}$ & 4.534$^{***}$ \\ 
+	& (0.271) & (0.269) \\ 
+  \hline \\[-1.8ex] 
+  Akaike Inf. Crit. & 4,690.770 & 4,690.770 \\ 
+  \hline 
+  \hline \\[-1.8ex] 
+  \textit{Note:}  & \multicolumn{2}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+  \end{tabular} 
+\end{table} 
+
+\noindent So, we can write our regression formula:
+\begin{align}
+	ln(\frac{P_{negative}}{P_{no change}}) = 3.805 + 1.379 \texttt{REG} + 4.784 \texttt{OIL} \\
+	ln(\frac{P_{positive}}{P_{no change}}) = 4.534 + 1.769 \texttt{REG} + 4.576 \texttt{OIL}
+\end{align}
+\noindent We can interpret the coefficient that:
+
+For regression formula (1), we can know:
+\begin{itemize}
+	\item[-] The constant (3.805) means the log odds of increase in estimated on average for \texttt{GDPWdiff} moving from "no change" to "negative" when \texttt{REG} and \texttt{OIL} are both 0.
+	\item[-] The coefficient of \texttt{REG} (1.379) refers that when \texttt{OIL} is stable, \texttt{REG} change from "non-democracy" (0) to "democracy" (1) will associated with an increase of 1.379 log odds on average for \texttt{GDPWdiff} moving from "no change" to "negative". But we should notice that the signifficant of coefficient of \texttt{REG} is during 0.05 to 0.1.
+	\item[-] The coefficient of \texttt{OIL} (4.784) is not signifficant.
+\end{itemize}
+
+For regression formula (2) we can know:
+\begin{itemize}
+	\item[-] The constant (4.534) means the log odds of increase in estimated on average for \texttt{GDPWdiff} moving from "no change" to "positive" when \texttt{REG} and \texttt{OIL} are both 0.
+	\item[-] The coefficient of \texttt{REG} (1.769) refers that when \texttt{OIL} is stable, \texttt{REG} change from "non-democracy" (0) to "democracy" (1) will associated with an increase of 1.769 log odds on average for \texttt{GDPWdiff} moving from "no change" to "negative". 
+	\item[-] The coefficient of \texttt{OIL} (4.576) is not signifficant.
+\end{itemize}
+
+\newpage
+
+\item Construct and interpret an ordered multinomial logit with \texttt{GDPWdiff} as the outcome variable, including the estimated cutoff points and coefficients.
+
+\noindent We can write \texttt{R} code to fit the model and calculate the p-value:
+\lstinputlisting[language=R, firstline=75,lastline=95]{PS03_answers_Chenxi.R} 
+\noindent And we will get output from \texttt{R}:
+\end{enumerate}
+\begin{table}[!htbp] \centering 
+	\caption{The outcome variable is \texttt{GDPWdiff} and explanatory variables are \texttt{REG} and \texttt{OIL}} 
+  \begin{tabular}{@{\extracolsep{5pt}} ccccc} 
+  \\[-1.8ex]\hline 
+  \hline \\[-1.8ex] 
+   & Value & Std. Error & t value & p value \\ 
+  \hline \\[-1.8ex] 
+  REG & $0.398$ & $0.075$ & $5.300$ & $0.00000$ \\ 
+  OIL & $$-$0.199$ & $0.116$ & $$-$1.717$ & $0.086$ \\ 
+  negative\textbar no change & $$-$0.731$ & $0.048$ & $$-$15.360$ & $0$ \\ 
+  no change\textbar positive & $$-$0.710$ & $0.048$ & $$-$14.955$ & $0$ \\ 
+  \hline \\[-1.8ex] 
+  \end{tabular} 
+  \end{table} 
+
+\noindent So, we can write our regression formula:
+
+\begin{align}
+	ln(\frac{P_{negative}}{P_{no change}}) = -0.7312 + 0.398 \texttt{REG} - 0.199 \texttt{OIL} \\
+	ln(\frac{P_{positive}}{P_{no change}}) = -0.7105 + 0.398 \texttt{REG} - 0.199 \texttt{OIL}
+\end{align}
+\newpage
+\noindent We can interpret the coefficient that:\\
+\par
+\begin{itemize}
+	\item[-] The cutoff points refers to the shift from "negative" to "no change" and "no change" to "positive" is -0.7312 and -0.7105 respectively.
+	\item[-] The coefficient of \texttt{REG} (0.398) refers when \texttt{OIL} is stable, \texttt{REG} change from "non-democracy" (0) to "democracy" (1) will associated with an increase of 0.398 log odds on average for \texttt{GDPWdiff} moving from one step to next one i.e. "negative" to "no change" and from "no change" to "positive".
+	\item[-] The coefficient of \texttt{OIL} (-0.199) refers when \texttt{REG} is stable, \texttt{OIL} change from fuel exports below 50\% (0) to exceeded 50\% (1) will ssociated with an increase of -0.199 log odds on average for \texttt{GDPWdiff} moving from one step to next one i.e. "negative" to "no change" and from "no change" to "positive". But we should notice that the signifficant of  coefficient of \texttt{OIL} is during 0.05 to 0.1.
+\end{itemize}
+
+\newpage
+
+\section*{Question 2} 
+\vspace{.25cm}
+
+\noindent Consider the data set \texttt{MexicoMuniData.csv}, which includes municipal-level information from Mexico. The outcome of interest is the number of times the winning PAN presidential candidate in 2006 (\texttt{PAN.visits.06}) visited a district leading up to the 2009 federal elections, which is a count. Our main predictor of interest is whether the district was highly contested, or whether it was not (the PAN or their opponents have electoral security) in the previous federal elections during 2000 (\texttt{competitive.district}), which is binary (1=close/swing district, 0="safe seat"). We also include \texttt{marginality.06} (a measure of poverty) and \texttt{PAN.governor.06} (a dummy for whether the state has a PAN-affiliated governor) as additional control variables. 
+
+\begin{enumerate}
+	\item [(a)]
+	Run a Poisson regression because the outcome is a count variable. Is there evidence that PAN presidential candidates visit swing districts more? Provide a test statistic and p-value.
+
+\begin{table}[!htbp] \centering 
+	\caption{} 
+	\label{} 
+	\begin{tabular}{@{\extracolsep{5pt}}lc} 
+	\\[-1.8ex]\hline 
+	\hline \\[-1.8ex] 
+	& \multicolumn{1}{c}{\textit{Dependent variable:}} \\ 
+	\cline{2-2} 
+	\\[-1.8ex] & PAN.visits.06 \\ 
+	\hline \\[-1.8ex] 
+	competitive.district & $-$0.081 \\ 
+	& (0.171) \\ 
+	marginality.06 & $-$2.080$^{***}$ \\ 
+	& (0.117) \\ 
+	PAN.governor.06 & $-$0.312$^{*}$ \\ 
+	& (0.167) \\ 
+	Constant & $-$3.810$^{***}$ \\ 
+	& (0.222) \\ 
+	\hline \\[-1.8ex] 
+	Observations & 2,407 \\ 
+	Log Likelihood & $-$645.606 \\ 
+	Akaike Inf. Crit. & 1,299.213 \\ 
+	\hline
+	\hline \\[-1.8ex] 
+	\textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+	\end{tabular} 
+\end{table} 
+\noindent We can write the poisson regression formula:
+\begin{align}
+	ln(\lambda) = -3.810 - 0.081 competitive.district - 2.080 marginality.06 - 0.312 PAN.governor.06
+\end{align}
+To draw a conclusion about if PAN presidential candidate visit swing district more, we need to check the signifficant of coefficient of \texttt{competitive.district}.
+\par
+\noindent The Z value of \texttt{competitive.district} is -0.477, and the p value of \texttt{competitive.district} is 0.6336, so it is not significant. This means we don't find enough evidence to say the coefficient of \texttt{competitive.district} is differ from 0. So we can conclude that there is not evidence that PAN presidential candidate visit swing districts more.
+
+\newpage
+	\item [(b)]
+	Interpret the \texttt{marginality.06} and \texttt{PAN.governor.06} coefficients.
+\begin{itemize}
+	\item[-] The coefficient of \texttt{marginality.06} (-2.080) refers when \texttt{PAN.governor.06} and \texttt{competitive.district} are stable, 1 unit increase in \texttt{marginality.06} is associated with an increase of -2.080 log odds on average for the mean value of \texttt{PAN.visits.06}.
+	\item[-] The coefficient of \texttt{PAN.governor.06} (-0.312) refers when \texttt{marginality.06} and \texttt{competitive.district} are stable, \texttt{PAN.governor.06} change from no PAN-affiliated governor (0) to have PAN-affiliated governor (1) will associated with an increase of -0.312 log odds on average for the mean value of \texttt{PAN.visits.06}. But we should notice that the signifficant of coefficient of \texttt{PAN.governor} is during 0.05 to 0.1.
+\end{itemize}
+
+	\item [(c)]
+	Provide the estimated mean number of visits from the winning PAN presidential candidate for a hypothetical district that was competitive (\texttt{competitive.district}=1), had an average poverty level (\texttt{marginality.06} = 0), and a PAN governor (\texttt{PAN.governor.06}=1).
+	
+\noindent According to the regression formula (5), we can know when \texttt{competitive.district} = 1, \texttt{marginality.06} = 0 and \texttt{PAN.governor} = 1, the formula is:
+\par
+$ln(\lambda) = -3.810 - 0.081 * 1 - 2.080 * 0 - 0.312 * 0 = -3.891$
+\par
+So the estimated mean number of \texttt{PAN.visits.06} is -3.891 under this hypothetical district.
+\end{enumerate}
+
+\end{document}
