@@ -106,3 +106,4 @@ p2a_model <- glm(PAN.visits.06 ~
                  competitive.district + marginality.06 + PAN.governor.06, 
                  data = mexico_elections, family = poisson)
 summary(p2a_model)
+stargazer(p2a_model)
