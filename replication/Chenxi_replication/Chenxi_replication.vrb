@@ -1,0 +1,27 @@
+\frametitle{Code - Check the Model}
+\noindent Now, let's check one of the model. For example, if we want to check when $Y$ is rating in unvaccinated group, then we can write:
+	\begin{adjustbox}{max width=\textwidth} % 调整盒子大小
+	\begin{lstlisting}[language=R, basicstyle=\footnotesize, firstline=23, lastline=23]{replication.R}
+	# Your R code here
+	\end{lstlisting}
+	\end{adjustbox} % 调整盒子大小
+	
+	\begin{table}[h]
+		\centering
+		\caption{Coefficients}
+		\begin{adjustbox}{max width=\textwidth} % 调整盒子大小
+		\begin{tabular}{lccc}
+			\hline
+			& Estimate & Std. Error & t value & Pr($>|t|$)\\
+			\hline
+			severity & 0.002545 & 0.005734 & 0.4438 & 6.572e-01\\
+			universality & -0.021862 & 0.005951 & -3.6736 & 2.417e-04\\
+			stringency & -0.091130 & 0.005649 & -16.1325 & 4.293e-57\\
+			severity:universality & -0.004736 & 0.007526 & -0.6292 & 5.292e-01\\
+			severity:stringency & 0.026078 & 0.006853 & 3.8051 & 1.435e-04\\
+			universality:stringency & 0.001157 & 0.007251 & 0.1595 & 8.733e-01\\
+			severity:universality:stringency & 0.004653 & 0.008978 & 0.5183 & 6.043e-01\\
+			\hline
+		\end{tabular}
+		\end{adjustbox} % 调整盒子大小
+	\end{table}

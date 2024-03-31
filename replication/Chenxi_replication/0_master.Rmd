@@ -1,0 +1,1516 @@
+---
+title: "Trading Liberties: Estimating Covid policy preferences from conjoint data"
+author:
+ - Felix Hartmann, Humboldt
+ - Macartan Humphreys, WZB and Columbia University
+ - Ferdinand Geissler, Humboldt
+ - Heike Klüver, Humboldt
+ - Johannes Giesecke, Humboldt
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 3
+    self_contained: yes
+    code_folding: hide
+  pdf_document:
+    toc: yes
+keywords: civil liberties, preferences, trade-offs, conjoint
+theme: null
+abstract: Replication code and data needed to reproduce results presented in-text and in the Supplemental Information provided for the study. 
+chunk_output_type: console
+---
+
+# Summary information (README)
+
+```{r class.source = "fold-show", eval = FALSE, echo = TRUE}
+
+# Readme for replication files;
+----------------------------
+initial deposit date: 10/02/2023
+this version: 10/02/2023
+-----------------------------
+article: "Trading Liberties: Estimating Covid policy preferences from conjoint data"
+authors: 
+ - Felix Hartmann, Humboldt
+ - Macartan Humphreys, WZB and Columbia University
+ - Ferdinand Geißler, Humboldt
+ - Heike Klüver, Humboldt
+ - Johannes Giesecke, Humboldt
+-----------------------------
+Replication code and data needed to reproduce results presented in-text and in the Supplemental Information provided for the study. 
+
+-----------------------------
+# code overview
+- "0_master.Rmd" R markdown script produces all the numeric results, tables, and figures in the main text and in the supplementary information
+
+-----------------------------
+# files:
+- "data" contains all data needed for replication
+- "code" contains all functions needed for replication
+- "results" contains numeric results, tables, and figures 
+
+
+- "data/df_long_rep_export.rds" -- data for the conjoint experiment
+- "data/vars.xls" -- data that containts covairate information and transformations
+- "data/W4_exp7_vignettes_universe_-_20210831.dta" -- data that contains vignettes
+
+- "data/7di-rl-by-ags.csv" -- data that contains 7 day incidence in the weeks before the study 
+	+ source: https://github.com/jgehrcke/covid-19-germany-gae
+
+- "data/sociodemographics_destatis_age.xlsx" -- data on sociodemographic (age) from the German Statistical Office
+- "data/sociodemographics_destatis_gender.xlsx" -- data on sociodemographic (gender) from the German Statistical Office
+- "data/sociodemographics_destatis_region.xlsx" -- data on sociodemographic (region) from the German Statistical Office
+	+ source: https://www.regionalstatistik.de/genesis/online/; values are always taken for 2021
+
+- "code/functions.R" --  cjEuclid functions 
+
+-----------------------------
+# environment
+- R version 4.1.1
+- Platform: x86_64-apple-darwin17.0 (64-bit)
+- Running under: macOS Monterey 12.0.1
+
+-----------------------------
+# package versions:
+- tidycat_0.1.2       
+- forcats_0.5.2       
+- stringr_1.5.0       
+- purrr_1.0.0        
+- readr_2.1.3         
+- tidyr_1.2.1         
+- tibble_3.1.8        
+- tidyverse_1.3.2    
+- texreg_1.38.6       
+- labelled_2.10.0     
+- knitr_1.41          
+- kableExtra_1.3.4   
+- fBasics_4021.93     
+- dplyr_1.0.10        
+- estimatr_1.0.0      
+- broom.helpers_1.9.0
+- curl_5.0.0          
+- gtrendsR_1.5.1      
+- ggpubr_0.5.0        
+- ggplot2_3.4.0      
+- haven_2.5.1         
+- readxl_1.4.1        
+- modelsummary_1.1.0  
+- gridExtra_2.3      
+- lfe_2.8-8           
+- Matrix_1.3-4        
+- formula.tools_1.7.1 
+- fixest_0.11.0      
+- pacman_0.5.1  
+
+-----------------------------
+# running time 
+- For "0_master.Rmd", about 5 min in total
+
+```
+
+
+# Housekeeping
+
+
+## packages, helpers, and opions
+
+```{r helpers, echo=TRUE, warning = FALSE, message = FALSE}
+# Helper to write matrices
+write_matrices <- function (mat, filename){
+  
+  array_to_LaTeX <- function(arr){
+   rows <- apply(arr, MARGIN=1, paste, collapse = " & ")
+   matrix_string <- paste(rows, collapse = " \\\\ ")
+   return(paste("\\begin{bmatrix}", matrix_string, "\\end{bmatrix}"))
+   }
+  fileConn <- file(filename)
+  writeLines(array_to_LaTeX(mat), fileConn)
+  close(fileConn)
+
+  }
+
+
+## Packages
+if (!require(pacman)) install.packages("pacman")
+pacman::p_load(
+  fixest,
+  formula.tools,
+  lfe,        #
+  gridExtra,
+  modelsummary,
+  readxl,      # read excel
+  haven,       # load sav
+  ggpubr,      # arrange multiple plots
+  gtrendsR,    # google trends
+  curl,
+  broom.helpers,# tidy regression
+  estimatr, 
+  dplyr,       # Data manipulation
+  fBasics,     # Summary statistics 
+  ggplot2,
+  kableExtra,  # Prettier RMarkdown (1.0.1)
+  knitr,
+  labelled,
+  texreg,
+  tidyverse,
+  tidycat     # tidy with categorical variables
+  )      # Modern alternative to data frames (2.1.1)
+
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE, comment=NA)
+options(qwraps2_markup = "markdown")
+
+#sessionInfo()
+
+options(modelsummary_format_numeric_latex = "mathmode")
+
+# Set seed for reproducibility
+set.seed(201911) 
+```
+
+## load functions
+
+Note that replication of the analysis of ideal points and indifference curves is most easily done using our package `cjEuclid`. If this package is not installed the needed functions are called from  `functions.R`.
+
+```{r }
+# remotes::install_github("macartan/cjEuclid",force = TRUE)
+
+cjcheck <- system.file(package = "cjEuclid") |> nzchar()
+
+cjcheck <- FALSE
+
+if(cjcheck) library(cjEuclid)
+if(!cjcheck) source("functions.R")
+
+```
+
+## provide variable labels
+
+Labels are used in tables and figures.
+
+```{r}
+# variable names and labels
+var_list <-  read_excel("vars.xls") %>% arrange(order)
+
+covariate_names <- var_list$new_name[var_list$covariate==1]
+
+# labels
+policy_stringency_labels <- 
+  c("Least", "Middling", "Most")
+
+policy_universality_labels <- 
+  c("Most\nexempted", "Some\nexempted", "Fewest")
+
+severity_codes <- c("Eine Verschlechterung der Situation (7-Tage-Inzidenz von 150 und eine Belegung der Intensivbetten von 80 %)" =-1,
+"Eine starke Verschlechterung der Situation (7-Tage-Inzidenz von 300 und eine Belegung der Intensivbetten von 90 %)"=0,
+"Eine dramatische Verschlechterung der Situation (7-Tage-Inzidenz von 800 und eine Belegung der Intensivbetten von 100 %)"=1)
+
+severity_labels <- 
+  c("Moderate worsening", "Sharp worsening", "Dramatic worsening")
+
+severity_labs <- list(-1, 0, 1)
+names(severity_labs) <- severity_labels
+
+outcomes <- 
+  c("rating","outcome","trust","vaccination_probability")
+
+outcome_labels <- 
+  c("Rating","Policy Support", "Trust", "Vaccination Probability")
+
+treatments <- 
+  c("severity", "stringency","universality")
+
+treatment_labels <- 
+  c("Severity of pandemic", "Severity of restriction","Universality of restrictions")
+
+statuses <- c("Acceptant", "Refusing", "Undecided")
+```
+
+
+## load vignettes
+
+```{r}
+# vignettes
+vignettepath <- "W4_exp7_vignettes_universe_-_20210831.dta"
+
+# get labels
+Z_labels <- read_dta(vignettepath) %>% 
+    mutate(Z_1_1 = as.numeric(vignr),
+          universality = as.numeric(costs)-1, 
+          stringency = as.numeric(restictions)-1)
+
+kable(Z_labels, booktabs = T)
+
+Zs <- dplyr::select(Z_labels, Z_1_1, universality, stringency)
+
+```
+
+## load data
+### Prep X, Y
+
+```{r} 
+
+df <- read_rds("df_long_rep_export.rds") %>% 
+  # only wave 4
+  dplyr::filter(wave == 4)  %>% 
+  # only 
+  dplyr::filter(group == 4 | group == 5) %>% 
+  # drop flagged cases 
+  dplyr::filter(pr_error_exp7 != 1) %>% 
+  # drop 14 cases with unknown vaccination status
+  dplyr::filter(v_28 != 99) %>% 
+  
+  # prepare treatments
+  mutate(
+    Z_t1_1 = as.numeric(paste(c_0031_w4)),
+    Z_t1_2 = as.numeric(paste(c_0032_w4)),
+    Z_t2_1 = as.numeric(paste(c_0033_w4)),
+    Z_t2_2 = as.numeric(paste(c_0034_w4))) %>% 
+  
+  left_join(Zs, by = c("Z_t1_1" = "Z_1_1")) %>% 
+    dplyr::rename(universal_t1_1 = universality, stringency_t1_1 = stringency)  %>% 
+    left_join(Zs, by = c("Z_t1_2" = "Z_1_1")) %>% 
+      dplyr::rename(universal_t1_2 = universality, stringency_t1_2 = stringency)  %>% 
+    left_join(Zs, by = c("Z_t2_1" = "Z_1_1")) %>% 
+      dplyr::rename(universal_t2_1 = universality, stringency_t2_1 = stringency)  %>% 
+    left_join(Zs, by = c("Z_t2_2" = "Z_1_1")) %>% 
+      dplyr::rename(universal_t2_2 = universality, stringency_t2_2 = stringency)  %>% 
+  
+  mutate(
+      severity_t1 = dplyr::recode(c_0106, !!!severity_codes),
+      severity_t2 = dplyr::recode(c_0107, !!!severity_codes))  %>%
+  
+  # Outcomes
+
+  mutate(
+    
+    # random vignette for each round
+    random_vignette1 = c_0108,
+    random_vignette2 = c_0109,
+    
+    # rating
+    rating_t1_1 = v_451/10,
+    rating_t1_2 = v_452/10,
+    rating_t2_1 = v_459/10,
+    rating_t2_2 = v_460/10,
+    
+    # vaccine probability
+    vaccine_probability_t1_1 = v_453/10,
+    vaccine_probability_t1_2 = v_454/10,
+    vaccine_probability_t2_1 = v_461/10,
+    vaccine_probability_t2_2 = v_462/10,
+
+
+    # choice: for choice there is one outcome indicating if first or second item is chosen
+    choice_t1_1 = 2 - v_449,
+    choice_t1_2 = v_449 - 1,
+    choice_t2_1 = 2 - v_458,
+    choice_t2_2 = v_458 - 1,
+
+
+    # trust: trust is asked only once for a random vignette
+    # Within round differencing not possible here
+    trust_t1_1 = ifelse(random_vignette1==1, v_455/10, NA),
+    trust_t1_2 = ifelse(random_vignette1==2, v_455/10, NA),
+    trust_t2_1 = ifelse(random_vignette2==1, v_463/10, NA),
+    trust_t2_2 = ifelse(random_vignette2==2, v_463/10, NA),
+
+    
+    # Differences
+    vaccine_probability_D1 = vaccine_probability_t1_2 - vaccine_probability_t1_1,
+    vaccine_probability_D2 = vaccine_probability_t2_2 - vaccine_probability_t2_1,
+    
+    rating_D1 = rating_t1_2 - rating_t1_1,
+    rating_D2 = rating_t2_2 - rating_t2_1,
+
+    choice_D1 = choice_t1_2 - choice_t1_1,
+    choice_D2 = choice_t2_2 - choice_t2_1,
+    
+    universal_D1  = universal_t1_2 - universal_t1_1,
+    universal_D2  = universal_t2_2 - universal_t2_1,
+
+    stringency_D1  = stringency_t1_2 - stringency_t1_1,
+    stringency_D2  = stringency_t2_2 - stringency_t2_1,
+
+    )
+```
+
+We now generate a long version of the data frame with 4 observations per person.
+
+```{r}
+longs <- list(
+long_data_11 = df %>%
+  dplyr::select(ID, severity_t1, stringency_t1_1, universal_t1_1,
+                rating_t1_1, choice_t1_1, trust_t1_1, vaccine_probability_t1_1) %>% 
+                  mutate(round = 1, vignette = 1),
+
+long_data_12 = df %>% 
+  dplyr::select(ID, severity_t1, stringency_t1_2, universal_t1_2,
+                rating_t1_2, choice_t1_2, trust_t1_2, vaccine_probability_t1_2) %>% 
+                  mutate(round = 1, vignette = 2),  
+
+long_data_21 = df %>% 
+  dplyr::select(ID, severity_t2, stringency_t2_1, universal_t2_1,
+                rating_t2_1, choice_t2_1, trust_t2_1, vaccine_probability_t2_1) %>% 
+                  mutate(round = 2, vignette = 1),  
+
+long_data_22 = df %>% 
+  dplyr::select(ID, severity_t2, stringency_t2_2, universal_t2_2,
+                rating_t2_2, choice_t2_2, trust_t2_2, vaccine_probability_t2_2) %>% 
+                  mutate(round = 2, vignette = 2))  
+
+long_names <- c("ID", "severity", "stringency", "universality",
+                "rating", "choice", "trust", "vaccine_probability", 
+                "round", "vignette")
+
+df_long <- lapply(longs, function(d) {names(d) <- long_names; d}) %>% bind_rows() 
+
+```
+
+
+
+### Covariate cleaning
+
+```{r}
+cov <- df %>% 
+  # rename covariates
+  rename_at(
+    vars(var_list$var_name[var_list$transformed==0]), 
+    ~ var_list$new_name[var_list$transformed==0]) %>% 
+  mutate(status = ifelse(
+      is.na(vaccination.intent),
+      "Vaccinated",
+      paste(vaccination.intent)
+    ),
+    status = dplyr::recode(
+      status,
+      "1" = "Acceptant",
+      "2" = "Refusing",
+      "3" = "Undecided"
+    ),
+    vaccinated = 1*(vaccination == 1),
+    age2 = (age - min(age))/(max(age) - min(age)),
+    # create age groups
+    age_18_29 =ifelse( age >= 18 & age <= 29
+                                  , 1, 0),
+    age_30_39 =ifelse( age >= 30 & age <= 39
+                                  , 1, 0),
+    age_40_49 =ifelse( age >= 40 & age <= 49
+                                  , 1, 0),
+    age_50_59 =ifelse( age >= 50 & age <= 59
+                                  , 1, 0),
+    age_60_75 =ifelse( age >= 60 & age <= 75
+                                  , 1, 0),
+    male = 1*(gender == 2), 
+    CDU.CSU = 1*(party.id <= 2),
+    CDU.CSU = ifelse(is.na(CDU.CSU), 0, CDU.CSU),
+    SPD = 1*(party.id ==3),
+    SPD = ifelse(is.na(SPD), 0, SPD),
+    AfD = 1*(party.id ==4),
+    AfD = ifelse(is.na(AfD), 0, AfD),
+    Greens = 1*(party.id ==5),
+    Greens = ifelse(is.na(Greens), 0, Greens),
+    FDP = 1*(party.id ==6),
+    FDP = ifelse(is.na(FDP), 0, FDP),
+    Left = 1*(party.id ==7),
+    Left = ifelse(is.na(Left), 0, Left),
+    No.party = 1*(party.id == 9),
+    No.party = ifelse(is.na(No.party), 0, No.party),
+    # 
+    blue.collar.worker = 1*(occupation ==1),
+    blue.collar.worker = ifelse(is.na(blue.collar.worker), 0, blue.collar.worker),
+    employee = 1*(occupation ==2),
+    employee = ifelse(is.na(employee), 0, employee),
+    civil.servant = 1*(occupation ==3),
+    civil.servant = ifelse(is.na(civil.servant), 0, civil.servant),
+    self.employed = 1*(occupation ==4),
+    self.employed = ifelse(is.na(self.employed), 0, self.employed),
+    farmer = 1*(occupation ==5),
+    farmer = ifelse(is.na(farmer), 0, farmer),
+    #
+    acceptant = 1*(vaccination.intent == 1),
+    acceptant = ifelse(is.na(vaccination.intent), 1, acceptant),
+    refusing = vaccination.intent == 2,
+    refusing = ifelse(is.na(vaccination.intent), 0, refusing),
+    undecided = 1*(vaccination.intent == 3),
+    undecided = ifelse(is.na(vaccination.intent), 0, undecided),
+    east.west =ifelse(federal.state== "4" |#"Brandenburg"
+                                  federal.state== "8" |#"Mecklenburg-Vorpommern"
+                                  federal.state== "13"|#"Sachsen"
+                                  federal.state== "14"|#Sachsen-Anhalt
+                                  federal.state== "16" #"Thüringen"
+                                  , 1, 0),
+    # create state indicators
+    Baden_Wuerttemberg =ifelse(federal.state== "1"
+                                  , 1, 0),
+    Bavaria =ifelse(federal.state== "2"
+                                  , 1, 0),
+    Berlin =ifelse(federal.state== "3"
+                                  , 1, 0),
+    Brandenburg =ifelse(federal.state== "4"
+                                  , 1, 0),
+    Bremen =ifelse(federal.state== "5"
+                                  , 1, 0),
+    Hamburg =ifelse(federal.state== "6"
+                                  , 1, 0),
+    Hesse =ifelse(federal.state== "7"
+                                  , 1, 0),
+    Mecklenburg_Vorpommern =ifelse(federal.state== "8"
+                                  , 1, 0),
+    Lower_Saxony =ifelse(federal.state== "9"
+                                  , 1, 0),
+    North_Rhine_Westphalia =ifelse(federal.state== "10"
+                                  , 1, 0),
+    Rhineland_Palatinate =ifelse(federal.state== "11"
+                                  , 1, 0), 
+    Saarland =ifelse(federal.state== "12"
+                                  , 1, 0),
+    Saxony =ifelse(federal.state== "13"
+                                  , 1, 0),
+    Saxony_Anhalt =ifelse(federal.state== "14"
+                                  , 1, 0),
+    Schleswig_Holstein =ifelse(federal.state== "15"
+                                  , 1, 0),
+    Thuringia =ifelse(federal.state== "16"
+                                  , 1, 0)
+)
+
+df_long <- df_long   %>% left_join(cov, by = c("ID" = "ID"))  |> 
+  # update id
+  group_by(ID) |>
+  mutate(ID = cur_group_id()) 
+
+```
+
+
+# Main results
+
+## Figure 1: Coefficient plot  
+
+```{r, results = "asis"}
+
+df_long_all <- 
+  bind_rows(
+    dplyr::filter(df_long) |> mutate(group = "All"),
+    dplyr::filter(df_long, vaccinated == 0) |> mutate(group = "Unvaccinated"),
+    dplyr::filter(df_long, vaccinated == 1) |> mutate(group = "Vaccinated"))
+
+custom.coef.map =  list("severity" = "Pandemic severity",
+                         "stringency" = "Policy stringency",
+                         "universality" = "Policy universality",
+                         "severity:stringency" = "Severity * Stringency",
+                         "severity:universality" = "Severity * Universality",
+                         "universality:stringency" = "Stringency * Universality",
+                         "severity:stringency:universality" = "Triple interaction"
+                         )
+
+fig_1_models <-
+  
+  list(All = "All", Unvaccinated= "Unvaccinated", Vaccinated = "Vaccinated") |>
+  lapply(function(g)
+    list(
+    rating = lm_robust(rating ~ severity*universality*stringency, fixed_effects = ~ ID, 
+                       data = df_long_all, subset = group == g, se_type = "stata"), 
+    choice = lm_robust(choice ~ severity*universality*stringency,  fixed_effects = ~ ID, 
+                       data = df_long_all, subset = group == g, se_type = "stata"), 
+    trust = lm_robust(trust ~ severity*universality*stringency,  fixed_effects = ~ ID, 
+                      data = df_long_all, subset = group == g, se_type = "stata"))
+  )
+
+    
+fig_1_models$Unvaccinated$vaccination <- 
+  lm_robust(vaccine_probability ~ severity*universality*stringency,  fixed_effects = ~ ID, 
+            data = df_long_all, subset = group == "Unvaccinated", se_type = "stata")
+
+
+  fig_1_data <- 
+    fig_1_models |>
+    lapply(function(m) m |> lapply(tidy) |> bind_rows()) |> 
+  bind_rows(.id = "group") |> 
+    dplyr::mutate(term = dplyr::recode(term,
+    "severity" = "Pandemic severity",
+    "stringency" = "Policy stringency",
+    "universality" = "Policy universality",
+    "severity:stringency" = "Severity * Stringency",
+    "severity:universality" = "Severity * Universality",
+    "universality:stringency" = "Stringency * Universality",
+    "severity:universality:stringency" = "Triple interaction"
+    ), outcome = dplyr::recode(
+      outcome,
+              "choice" = "Choice",
+              "rating" = "Rating",
+              "trust" = "Trust",
+              "vaccine_probability" = "Vaccination Probability"
+    )
+   )  
+  
+  
+fig_main <- 
+  fig_1_data %>% 
+   #dplyr::filter(term != "Triple interaction") %>% 
+    ggplot(aes(x = estimate, y = term, color = group, shape=group)) +
+    geom_point(size = 2.5,position=position_dodge(width=0.5)) + 
+    geom_errorbarh(aes(y = term, xmin =conf.low, xmax = conf.high),
+                 size=0.5, alpha = 0.5, height = 0.2, position=position_dodge(width=0.5)) +
+  facet_grid(~ outcome , scales = "free")+
+  theme_bw() +
+  scale_y_discrete(limits=rev)+
+  theme(axis.title.y=element_blank()) +
+  theme(axis.title.x=element_text(size = 14)) +
+  theme(axis.text.y =element_text(size = 14)) +
+  theme(axis.text.x = element_text(size = 11)) +
+  theme(strip.text.x = element_text(size = 14))+
+  theme(legend.text=element_text(size=14))+
+  geom_vline(xintercept = 0, linetype="dotted", 
+                color = "black") +
+    #scale_x_continuous(breaks=pretty_breaks(n = 4),labels = scales::number_format(accuracy = 0.01))+
+    # scale_x_continuous(breaks=pretty_breaks(n = 3)) + 
+    theme(legend.position="bottom")
+
+pdf("fig_1.pdf", width = 12, height = 5)
+fig_main
+dev.off()
+```
+
+Display the figure:
+
+```{r, fig.height = 6, fig.width = 12}
+fig_main
+```
+
+
+## For text: Head to head comparisons
+
+### Low-mid stringency comparisons
+```{r}
+# LM comparison
+df_long %>% 
+  # dplyr::filter(severity == 1) %>% 
+  dplyr::filter(stringency <= 0) %>% 
+  group_by(severity, ID, universality) %>% mutate(x = mean(stringency) == -.5) %>% ungroup %>% 
+  dplyr::filter(x) %>% arrange(ID) %>% 
+  # dplyr::select(id, outcome, choice, stringency, severity, universality) %>% # View
+  group_by(severity, stringency) %>% summarize(n(), choice = mean(choice))
+
+```
+
+### Mid-high stringency comparisons
+```{r}
+# MH comparison
+df_long %>% 
+  # dplyr::filter(severity == 1) %>% 
+  dplyr::filter(stringency >= 0) %>% 
+  group_by(severity, ID, universality) %>% mutate(x = mean(stringency) == .5) %>% ungroup %>% 
+  dplyr::filter(x) %>% arrange(ID) %>% 
+  # dplyr::select(id, outcome, choice, stringency, severity, universality) %>% # View
+  group_by(severity, stringency) %>% summarize(n(), choice = mean(choice))
+
+```
+
+### Low-high stringency comparisons
+```{r}
+# LH comparison
+df_long %>% 
+  # dplyr::filter(severity == 1) %>% 
+  dplyr::filter(stringency != 0) %>% 
+  group_by(severity, ID, universality) %>% mutate(x = mean(stringency) == 0) %>% ungroup %>% 
+  dplyr::filter(x) %>% arrange(ID) %>% 
+  # dplyr::select(id, outcome, choice, stringency, severity, universality) %>% # View
+  group_by(severity, stringency) %>% summarize(n(), choice = mean(choice))
+
+```
+
+
+## Figure 2: Ideal points and tradeoffs
+
+We use the model in the PAP implemented via  `cjEuclid` to estimate ideal points and indifference curves assuming a general linear quadratic utility function.
+
+```{r, fig.height = 10, fig.width = 15}
+
+ideals <- cj_euclid(
+  rating ~ universality + stringency + severity,
+  data = df_long,
+  fixed_effects = "ID",
+  mins = c(-1, -1, -1),
+  maxs = c(1, 1, 1),
+  lengths = c(30, 30, 3),
+  X = "universality",
+  x_vals = policy_universality_labels,
+  Y = "stringency",
+  y_vals = policy_stringency_labels,
+  Col = "severity")
+
+
+ideals$graph + xlab("Universality") + ylab("Stringency")
+```
+
+Note the failure of positive semi definiteness here comes from the low weight on severity when assessing policies. This is not surprising from the design as subjects were evaluating policies *given* severity. A "given" analysis would condition on severity thus:
+
+```{r}
+
+
+fig_2_models <-
+  list(all = df_long,
+       vaccinated = dplyr::filter(df_long, vaccinated==1),
+       unvaccinated = dplyr::filter(df_long, vaccinated==0)) %>%
+  lapply(function(data)
+      cj_euclid(rating ~ universality + stringency + severity,
+             fixed_effects = "ID",
+             data = data,
+             lengths = c(30, 30, 3)))
+
+# Write matrices
+mapply(function(model, name) 
+  write_matrices(round(model$A, 3), name),
+  fig_2_models, c("results/fig_2_mat_all.tex", "results/fig_2_mat_vac.tex", "results/fig_2_mat_unvac.tex"))
+  
+
+fig_2 <-
+  
+  fig_2_models |>
+  lapply(function(m) m$predictions_df) |> 
+  bind_rows(.id = "group") |>
+  mutate(group = factor(group, c("all", "vaccinated", "unvaccinated"))) |>
+  mutate(severity = factor(severity, -1:1, severity_labels)) |>
+  euclid_plot(
+    X = "universality",
+    x_vals =policy_universality_labels ,
+    Y = "stringency",
+    y_vals = policy_stringency_labels,
+    Col = "severity",
+    Row = "group")  + xlab("Universality") + ylab("Stringency")
+
+fig_2
+
+```
+
+
+```{r}
+
+pdf("results/fig_2.pdf", width = 10, height =10)
+ fig_2 + theme(legend.position="bottom")
+dev.off()
+
+
+```
+
+## Independence tests
+
+In most cases we cannot reject the null that preferences for stringency and universality are separable.   
+
+```{r}
+euclidean_models <-
+  
+  list(all = df_long,
+         vaccinated = dplyr::filter(df_long, vaccinated==1),
+         unvaccinated = dplyr::filter(df_long, vaccinated==0)) %>%
+  lapply(function(data)
+    lapply(severity_labs, function(j)
+      cj_euclid(rating ~ universality + stringency,
+             fixed_effects = "ID",
+             data = data |> filter(severity == j))$model))
+
+
+euclidean_models %>% 
+  lapply(
+    function(L)    {L|> lapply(
+      function(m) m |> tidy()) |> bind_rows(.id = "Context")
+      }) %>% 
+  bind_rows(.id = "Group") %>% 
+  dplyr::filter(term == "universality:stringency") |>
+  select(Group, Context, term, p.value) |>
+  kable(digits = 3, booktabs = TRUE) |>
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed", "responsive"),
+              full_width=FALSE)
+```
+
+
+Equal salience is generally rejected however except in the case of dramatic worsening for the vaccinated:
+
+```{r}
+
+euclidean_models %>% 
+  lapply(
+    function(L)    {L|> lapply(
+      function(m)  car::linearHypothesis(m,  "I(universality^2)  = I(stringency^2)")$`Pr(>Chisq)`[2]) |> bind_rows(.id = "Context")
+      }) %>% 
+  bind_rows(.id = "Group") %>% kable(digits = 3, booktabs = TRUE)|>
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed", "responsive"),
+              full_width=FALSE)
+
+
+```
+
+
+# Appendix 
+
+## Table A1: Main summary Stats
+
+### Main sample
+
+```{r }
+df_small <- 
+  df_long %>% dplyr::select(all_of(c("status","group", covariate_names))) %>% 
+  # select_if(is.numeric) %>% 
+  drop_na() %>% 
+  group_by(ID) %>% slice(1) %>% ungroup()
+
+summ_stats_main  <- 
+  df_small %>% 
+  # only main sample
+  dplyr::filter(group == 4) %>% 
+  select(-status, -ID,-group) %>%
+  fBasics::basicStats() 
+
+summ_stats_main <- round(summ_stats_main, 2) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  dplyr::select("Mean") %>%
+  dplyr::rename(`Wave 4 Main` = Mean)  
+
+# Add in labels
+summ_stats_main <- summ_stats_main %>% 
+  dplyr::mutate(Variable = factor(rownames(summ_stats_main), var_list$new_name, var_list$label)) %>% 
+  relocate(Variable) 
+```
+
+### Refreshmment sample
+```{r }
+summ_stats_refresh  <- 
+  df_small %>% 
+  # only main sample
+  dplyr::filter(group == 5) %>% 
+  select(-status, -ID,-group) %>%
+  fBasics::basicStats() 
+
+summ_stats_refresh <- round(summ_stats_refresh, 2) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  dplyr::select("Mean")  %>%
+  dplyr::rename(`Wave 4 Refreshment` = Mean)  
+
+
+# Add in labels
+summ_stats_refresh <- summ_stats_refresh %>% 
+  dplyr::mutate(Variable = factor(rownames(summ_stats_refresh), var_list$new_name, var_list$label)) %>% 
+  relocate(Variable) 
+```
+
+
+
+### Statistical Office 
+Source: https://www.regionalstatistik.de/genesis/online/; values are always taken for 2021
+```{r}
+# gender 
+df1 <- read_excel("data/sociodemographics_destatis_gender.xlsx",range = "A7:D83")  %>%
+          # create sum
+       dplyr::mutate(
+         Total = sum(`...4`),
+         Male = sum(`...2`)/Total,
+         Female = sum(`...3`)/Total) %>%
+       dplyr::filter(row_number() %in% c(1:1)) %>%     
+       dplyr::select(Male,Female)  %>%
+       dplyr::mutate(value="value")  %>% 
+       tidyr::gather(Variable, value, -value)  %>%
+       dplyr::mutate(total = sum(value))%>%
+       dplyr::mutate(`Statistical-office` = value/total) %>%
+       dplyr::select(Variable,`Statistical-office`)  %>% 
+       dplyr::filter(row_number() %in% c(1:1))     
+
+
+# age 
+df2 <- read_excel("data/sociodemographics_destatis_age.xlsx",range = "A7:F92",col_names = FALSE)  %>%
+        dplyr::select(...1,...6) %>%
+        # create sum
+        dplyr::mutate(total = sum(...6[row_number() %in% 19:76])) %>%
+        dplyr::mutate(`18-29` = sum(...6[row_number() %in% 19:30])/total) %>%
+        dplyr::mutate(`30-39` = sum(...6[row_number() %in% 31:40])/total) %>%
+        dplyr::mutate(`40-49` = sum(...6[row_number() %in% 41:50])/total) %>%
+        dplyr::mutate(`50-59` = sum(...6[row_number() %in% 51:60])/total) %>%
+        dplyr::mutate(`60-75` = sum(...6[row_number() %in% 61:76])/total) %>%
+        dplyr::select(`18-29`,`30-39`,`40-49`,`50-59`,`60-75`) %>%
+        dplyr::filter(row_number() %in% c(1:1)) %>%     
+        dplyr::mutate(value="value")  %>% 
+        tidyr::gather(Variable, value, -value)  %>%
+        dplyr::mutate(total = sum(value))%>%
+        dplyr::mutate(`Statistical-office` = value/total) %>%
+        dplyr::select(Variable,`Statistical-office`)  
+
+
+# region
+df3 <- read_excel("data/sociodemographics_destatis_region.xlsx", range = "A5:Q97") %>%
+  dplyr::filter(!row_number() %in% c(1:19)) %>%
+  dplyr::filter(!row_number() %in% c(59:73)) %>%
+  dplyr::select(-(...1))  %>%
+  dplyr::mutate(`Baden Wuerttemberg` = sum(`Baden-Württemberg`),
+         `Bavaria` = sum(`Bayern`),
+         `Berlin` = sum(`Berlin`),
+         `Brandenburg` = sum(`Brandenburg`),
+         `Bremen` = sum(`Bremen`),
+         `Hamburg` = sum(`Hamburg`),
+         `Hesse` = sum(`Hessen`),
+         `Mecklenburg-Vorpommern` = sum(`Mecklenburg-Vorpommern`),
+         `Lower-Saxony` = sum(`Niedersachsen`),
+         `North-Rhine-Westphalia` = sum(`Nordrhein-Westfalen`),
+         `Rhineland-Palatinate` = sum(`Rheinland-Pfalz`),
+         `Saarland` = sum(`Saarland`),
+         `Saxony` = sum(`Sachsen`),
+         `Saxony-Anhalt` = sum(`Sachsen-Anhalt`),
+         `Schleswig-Holstein` = sum(`Schleswig-Holstein`),
+         `Thuringia` = sum(`Thüringen`)
+         ) %>% 
+         dplyr::select(`Baden Wuerttemberg`,`Bavaria`,`Thuringia`,`Berlin`,
+                       `Brandenburg`,`Bremen`,`Hamburg`,`Hesse`,
+                       `Mecklenburg-Vorpommern`,`Lower-Saxony`,
+                       `North-Rhine-Westphalia`,`Rhineland-Palatinate`,
+                       `Saarland`,`Saxony`,`Saxony-Anhalt`,`Schleswig-Holstein`,
+                       `Thuringia` 
+                       ) %>% 
+         distinct() %>% 
+         dplyr::mutate(value="value")  %>% 
+         tidyr::gather(Variable, value, -value)  %>%
+         dplyr::mutate(total = sum(value))%>%
+         dplyr::mutate(`Statistical-office` = value/total) %>%
+         dplyr::select(Variable,`Statistical-office`) 
+
+
+
+
+
+sum_stats_statoffice<-bind_rows(df1, df2,df3)
+
+```
+
+```{r summary_stats_main, results="asis", message=FALSE, echo=FALSE}
+
+# merge#put all data frames into list
+df_list <- list(sum_stats_statoffice, summ_stats_main, summ_stats_refresh)
+
+#merge all data frames in list
+summ_stats<-df_list %>% reduce(full_join, by='Variable')
+
+ 
+# Pretty-printing in HTML
+summ_stats_table <- kable(summ_stats, format ="html", digits = 2, booktabs = TRUE, row.names = FALSE)
+kable_styling(summ_stats_table,
+              bootstrap_options=c("striped", "hover", "condensed", "responsive"),
+              full_width=FALSE)
+
+
+# format
+ 
+tabA1 <- kable(summ_stats, 
+               format = "latex", 
+               digits = 2, caption = 
+                 "Summary statistics", 
+               booktabs = T, linesep = "", label = "SummStats", row.names = FALSE) %>% 
+  kable_styling(latex_options="scale_down")
+
+writeLines(tabA1, 'results/tabA1.tex')
+
+
+```
+
+
+
+## Descriptives figures: Vaccination status
+
+```{r}
+df_small %>% 
+  dplyr::select(status) %>% 
+      group_by(status) %>% 
+      summarise(n = n()) %>% 
+      mutate(totalN = (cumsum(n)),
+             percent = round((n / sum(n)), 3),
+             cumpercent = round(cumsum(freq = n / sum(n)),3)) |>
+  kable() |>
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed", "responsive"),
+              full_width=FALSE)
+
+fig_1 <- df_long %>% 
+  ggplot(aes(status)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..)),width = 0.6,alpha = 0.5) + 
+  scale_y_continuous(labels=scales::percent) +
+  theme_bw(base_size=16)+
+  theme(axis.title.y = element_blank())+
+  ylab("Percent (%)")+
+  coord_flip()
+fig_1   
+
+pdf("results/fig_descriptive_1.pdf", height = 3, width = 6)
+fig_1
+dev.off()
+
+```
+## Figure A1: Covid 7 day Incidence by Date
+
+```{r}
+# load data
+# 7 day incidence in the weeks before the study 
+# source: https://github.com/jgehrcke/covid-19-germany-gae
+inc<- read.csv(file = 'data/7di-rl-by-ags.csv')
+
+
+# reshape
+inc_long <- tidyr::pivot_longer(inc, c(2:401), names_to=c("Kreis", "measure"), names_sep="_", values_to="count")[,-c(2:4)]
+
+# there are some negative numbers ()
+inc_long<-inc_long %>% 
+  dplyr::filter( count > 0)
+
+# encode time variable
+inc_long$date <- as.Date(substr(inc_long$time_iso8601, 1, 10))
+
+# subset dates August/September
+inc_long_date <- subset(inc_long, date > as.Date("2021-09-20") )
+inc_long_date <- subset(inc_long_date, date < as.Date("2021-09-22") )
+
+# subset dates September
+inc_long_sep <- subset(inc_long, date < as.Date("2021-09-22") )
+inc_long_sep <- subset(inc_long_sep, date > as.Date("2021-09-01") )
+
+# subset dates 2021
+inc_long_2021 <- subset(inc_long, date > as.Date("2021-01-01") )
+inc_long_2021 <- subset(inc_long_2021, date < as.Date("2021-09-22") )
+
+inc_long_2021<-inc_long_2021%>%
+ggplot(aes(x = date, y = count,group=time_iso8601)) + 
+  geom_line() +
+  ylab("covid 7 day incidence") +
+  theme_bw()
+
+inc_long_2021
+ggsave("results/fig_A1a.pdf", width = 8, height = 4, units = "in")
+
+inc_long_sep<-inc_long_sep%>%
+  ggplot(aes(x = date, y = count,group=time_iso8601)) + 
+  geom_line()+
+  ylab("covid 7 day incidence") +
+  theme_bw()
+
+inc_long_sep
+ggsave("results/fig_A1b.pdf", width = 8, height = 4, units = "in")
+
+dev.off()
+```
+
+## Figure A2: Google search queries 
+
+
+```{r}
+# Set the time window
+time <- paste0("2021-01-01 2021-12-22")
+# Set channels
+channel <- "web"
+# Set the geographic area: DE = Germany;
+country <- c("DE")
+keywords<- c("Vierte Welle", "Exponentielles Wachstum")
+
+trends = gtrends(keywords, gprop =channel,geo=country, time = time )
+#select only interst over time 
+time_trend=trends$interest_over_time
+
+timetrend1<- 
+  ggplot()+
+  geom_rect(aes(xmin=as.Date("2021-09-08"), xmax=as.Date("2021-09-22"),  ymin=-Inf, ymax=Inf,
+                fill = "Survey Fielding"),alpha=0.2)+
+  geom_smooth(data=time_trend, aes(x=as.Date(date), y=hits, group=keyword, col=keyword), span=0.7, se=FALSE) +
+  xlab('Time')+
+  ylab('Relative Interest')+
+  theme_bw(base_size=14)+
+  theme(legend.title = element_blank(),legend.position="bottom",legend.text=element_text(size=12))+
+  ggtitle("Google Search Volume 2021")
+
+timetrend1
+
+
+ggsave("results/fig_A2.pdf", width = 8, height = 4, units = "in")
+
+dev.off()
+
+```
+
+
+
+
+## Table A2: Main Analysis
+
+```{r, results = "asis"}
+
+
+x <- c(fig_1_models[[1]], fig_1_models[[2]], fig_1_models[[3]])
+
+pap_1_write <- function(
+    model_list,
+    filename = "results/tabA2.tex",
+    add_text = " Full sample of respondents.",
+    label = "tab:saturated_all") {
+  fileConn <- file(filename)
+  writeLines(texreg(model_list, 
+                    float.pos = "h!", 
+                    ci.test = NULL,
+                    include.ci = FALSE, 
+                    caption = paste0("\\label{", label, "}Main results, with interactions and individual fixed effects. 95 confidence intervals in square brackets. All treatments are centered on zero.", add_text),
+                    custom.coef.map =  custom.coef.map,
+                    custom.header = list("All" = 1:3, "Vaccinated" = 4:6, "Unvaccinated" = 7:10),
+                    custom.model.names = rep(c("Rating", "Choice",  "Trust","Rating", "Choice",  "Trust", "Rating", "Choice",  "Trust", "Vaccination")),
+                    digits = 3), 
+             fileConn)
+  close(fileConn)
+  }
+
+x %>% pap_1_write()
+
+```
+
+```{r, results = "asis"}
+x <- c(fig_1_models[[1]], fig_1_models[[2]], fig_1_models[[3]])
+
+htmlreg(x, include.ci = FALSE, 
+        #custom.coef.map =  custom.coef.map,
+        digits = 3#,
+ #        custom.header = list("Vaccinated" = 1:3, "Unvaccinated" = 4:7))
+)
+
+
+
+```
+
+## Figure A3: Conditional preferences
+
+We implement the same analysis but now conditioning on severity and estimating preferences over the policy dimensions only:
+
+```{r}
+conditional <-
+  
+  list(all = df_long,
+       vaccinated = dplyr::filter(df_long, vaccinated==1),
+       unvaccinated = dplyr::filter(df_long, vaccinated==0)) %>%
+  lapply(function(data)
+    lapply(severity_labs, function(j)
+      cj_euclid(rating ~ universality + stringency,
+             fixed_effects = "ID",
+             data = data |> filter(severity == j),
+             mins = c(-1, -1),
+             maxs = c(1, 1),
+             lengths = c(30, 30))$predictions_df ) |> 
+      bind_rows(.id = "severity"))  |> bind_rows(.id = "group") |>
+  mutate(severity = factor(severity, severity_labels),
+         group = factor(group, c("all", "vaccinated", "unvaccinated")))
+
+# Write matrices
+severity_labs |>
+  lapply(function(j)
+      lm_euclid(rating ~ universality + stringency, fixed_effects = "ID", data = df_long)$A |>
+        round(3) |>
+      write_matrices(paste0("results/fig2c_matrix_all_", j, ".tex")))
+
+severity_labs |>
+  lapply(function(j)
+      lm_euclid(rating ~ universality + stringency, fixed_effects = "ID", 
+                data = dplyr::filter(df_long, vaccinated==1))$A |>
+        round(3) |>
+      write_matrices(paste0("results/fig2c_matrix_vac_", j, ".tex")))
+
+severity_labs |>
+  lapply(function(j)
+      lm_euclid(rating ~ universality + stringency, fixed_effects = "ID", 
+                data = dplyr::filter(df_long, vaccinated==0))$A |>
+        round(3) |>
+      write_matrices(paste0("results/fig2c_matrix_unvac_", j, ".tex")))
+
+
+fig_2c <- conditional |> 
+  euclid_plot(
+    X = "universality",
+    x_vals =policy_universality_labels ,
+    Y = "stringency",
+    y_vals = policy_stringency_labels,
+    Col = "severity",
+    Row = "group")  + xlab("Universality") + ylab("Stringency")
+
+fig_2c
+
+
+pdf("results/fig_A3.pdf", width = 10, height = 10)
+ fig_2c  + theme(legend.position="bottom")
+dev.off()
+
+
+```
+
+
+
+## Figure A4: Ideals and tradeoffs by party
+
+```{r, fig.height = 11, fig.width = 9}
+
+# Implement: All
+
+dfs <- 
+    list(CDU = dplyr::filter(df_long, party.id==1),
+       SPD = dplyr::filter(df_long, party.id==3),
+       AfD = dplyr::filter(df_long, party.id==4),
+       Greens = dplyr::filter(df_long, party.id==5),
+       Liberals = dplyr::filter(df_long, party.id==6),
+       Left = dplyr::filter(df_long, party.id==7)
+       )
+
+conditional_by_party <-
+  
+  dfs %>%
+  lapply(function(data)
+    lapply(severity_labs, function(j)
+      cj_euclid(rating ~ universality + stringency,
+             fixed_effects = "ID",
+             
+             data = data |> filter(severity == j),
+             mins = c(-1, -1),
+             maxs = c(1, 1),
+             lengths = c(30, 30))$predictions_df ) |> 
+      bind_rows(.id = "severity"))  |> bind_rows(.id = "party") |>
+  mutate(severity = factor(severity, severity_labels),
+         party = factor(party, names(dfs)))
+
+      
+
+fig_3p <- conditional_by_party |> 
+  euclid_plot(
+    X = "universality",
+    x_vals = policy_universality_labels,
+    Y = "stringency",
+    y_vals = policy_stringency_labels,
+    Col = "severity",
+    Row = "party")  + xlab("Universality") + ylab("Stringency")
+
+
+ fig_3p
+
+pdf("results/fig_A4.pdf", width = 8, height = 13)
+ fig_3p
+dev.off()
+
+```
+  
+
+## Figure A5: Ideals and tradeoffs by occupation
+
+```{r, fig.height = 11, fig.width = 9}
+
+
+
+dfs <- 
+    list(blue.collar.worker = dplyr::filter(df_long, occupation==1),
+       employee = dplyr::filter(df_long, occupation==2),
+       civil.servant = dplyr::filter(df_long, occupation==3),
+       self.employed = dplyr::filter(df_long, occupation==4)
+       #farmer = dplyr::filter(df_long, occupation==5)
+       )
+
+conditional_by_occupation <-
+  
+  dfs %>%
+  lapply(function(data)
+    lapply(severity_labs, function(j)
+      cj_euclid(rating ~ universality + stringency,
+             fixed_effects = "ID",
+             data = data |> filter(severity == j),
+             mins = c(-1, -1),
+             maxs = c(1, 1),
+             lengths = c(30, 30))$predictions_df ) |> 
+      bind_rows(.id = "severity"))  |> 
+  bind_rows(.id = "occupation") |>
+  mutate(severity = factor(severity, severity_labels),
+         occupation = factor(occupation, names(dfs)))
+
+      
+
+fig_5p <- conditional_by_occupation |> 
+  euclid_plot(
+    X = "universality",
+    x_vals = policy_universality_labels,
+    Y = "stringency",
+    y_vals = policy_stringency_labels,
+    Col = "severity",
+    Row = "occupation")  + xlab("Universality") + ylab("Stringency")
+
+
+ fig_5p
+
+pdf("results/fig_A5.pdf", width = 8, height = 13)
+ fig_5p
+dev.off()
+
+```
+
+## Table A3: AMCEs
+
+```{r, results = "asis"}
+# recode (not really needed, just to have a little more intuitive coding)
+df_amce<-df_long %>% 
+  dplyr::mutate(
+  severity_amce = severity +1,
+  stringency_amce = stringency + 1,
+  universal_amce = universality  +1)
+
+df_amce_unv <- dplyr::filter(df_amce, vaccinated == 0)
+
+pap_1_amce <-
+
+    list(
+    rating =   lm_robust(rating ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce, se_type = "stata"),
+    
+    choice =  lm_robust(choice ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce, se_type = "stata"),
+    
+    trust = 
+  lm_robust(trust ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce, se_type = "stata"),
+
+        rating_sub =   lm_robust(rating ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce_unv, se_type = "stata"),
+    
+    choice_sub =  lm_robust(choice ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce_unv, se_type = "stata"),
+    
+    trust_sub = 
+  lm_robust(trust ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce_unv, se_type = "stata"),
+  
+    vaccine_probability_sub = 
+  lm_robust(vaccine_probability ~ factor(severity_amce)+factor(universal_amce)+factor(stringency_amce),  fixed_effects = ~ ID, data = df_amce_unv, se_type = "stata")
+  
+)
+
+custom.coef.map =  list("factor(severity_amce)1" = "Sharp Worsening",
+                         "factor(severity_amce)2" = "Dramatic Worsening",
+                         "factor(universal_amce)1" = "Some exemptions",
+                         "factor(universal_amce)2" = "Fewest exemptions",
+                         "factor(stringency_amce)1" = "Moderate Restrictions",
+                         "factor(stringency_amce)2" = "Severe Restrictions"
+                         )
+
+pap_amce_write <- function(model_list, 
+                      filename = "results/tabA3.tex", 
+                      add_text = "Full sample of respondents.",
+                      label = "tab:AMCE") {
+fileConn <- file(filename)
+writeLines(texreg(model_list, float.pos = "h!", 
+                  ci.test = NULL,
+                  include.ci = FALSE, 
+                  caption = paste0("\\label{", label, "}AMCE, with individual fixed effects. 95 confidence intervals in square brackets. First four columns employ data on all respondents; last four on unvaccinated respondents only.", add_text),
+                  custom.coef.map =  custom.coef.map,
+                  custom.header = list("All" = 1:3, "Unvaccinated" = 4:7),
+                  custom.model.names = c("Rating", "Choice",  "Trust", "Rating", "Choice", "Trust","Vaccination"),
+                  digits = 3), fileConn)
+close(fileConn)
+}
+
+htmlreg(pap_1_amce,include.ci = FALSE)
+
+pap_1_amce %>% pap_amce_write()
+
+```
+
+
+## Table A4: Refresher sample Conjoint estimates
+
+```{r, results = "asis"}
+#  df_long_norm_refresh <-dplyr::filter(df_long_norm, group == 5)
+
+df_long_refresh <-dplyr::filter(df_long, group == 5)
+df_long_unv     <- dplyr::filter(df_long, vaccinated == 0, group == 5)
+
+pap_1_refresh <-
+
+  list(
+    rating =   lm_robust(rating ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_refresh, se_type = "stata"),
+    
+    choice =  lm_robust(choice ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_refresh, se_type = "stata"),
+    
+    trust = 
+  lm_robust(trust ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_refresh, se_type = "stata"),
+  
+  rating_sub =   lm_robust(rating ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_unv, se_type = "stata"),
+  
+  choice_sub =  lm_robust(choice ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_unv, se_type = "stata"),
+  
+  trust_sub = 
+  lm_robust(trust ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_unv, se_type = "stata"),
+  
+  vaccine_probability_sub = 
+  lm_robust(vaccine_probability ~ severity*universality*stringency,  fixed_effects = ~ ID, data = df_long_unv, se_type = "stata")
+  
+)
+
+
+htmlreg(pap_1_refresh,include.ci = FALSE)
+```
+
+```{r}
+custom.coef.map =  list("severity" = "Pandemic severity",
+                         "universality" = "Policy universality",
+                         "stringency" = "Policy stringency",
+                         "severity:stringency" = "Severity * Stringency",
+                         "severity:universality" = "Severity * Universality",
+                         "universality:stringency" = "Stringency * Universality",
+                         "severity:universality:stringency" = "Triple interaction"
+                         )
+
+
+pap_3_write <- function(model_list, 
+                      filename = "results/tabA4.tex", 
+                      add_text = " Refreshment Sample",
+                      label = "tab:saturated_all") {
+fileConn <- file(filename)
+writeLines(texreg(model_list, float.pos = "h!", 
+                  ci.test = NULL,
+                  include.ci = FALSE, 
+                  caption = paste0("\\label{", label, "}Main results, with interactions and individual fixed effects. 95 confidence intervals in square brackets. All treatments are centered on zero. First four columns employ data on all respondents; last four on unvaccinated respondents only.", add_text),
+                  custom.coef.map =  custom.coef.map,
+                  custom.header = list("All" = 1:3, "Unvaccinated" = 4:7),
+                  custom.model.names = rep(c("Rating", "Choice",  "Trust","Rating", "Choice",  "Trust", "Vaccination")),
+                  #model.names = rep(c("Rating", "Choice",  "Trust", "Vaccination"), 2),
+                  digits = 3), fileConn)
+close(fileConn)
+}
+
+pap_1_refresh  %>% pap_3_write()
+     
+```
+
+
+## Figure A6: Refresher sample ideals 
+
+```{r, fig.height = 10, fig.width = 12}
+
+conditional_refresh <-
+  
+  list(all = df_long_refresh,
+         vaccinated = dplyr::filter(df_long_refresh, vaccinated==1),
+         unvaccinated = dplyr::filter(df_long_refresh, vaccinated==0)) %>%
+  lapply(function(data)
+    lapply(severity_labs, function(j)
+      cj_euclid(rating ~ universality + stringency,
+             fixed_effects = "ID",
+             data = data |> filter(severity == j),
+             mins = c(-1, -1),
+             maxs = c(1, 1),
+             lengths = c(30, 30))$predictions_df ) |> 
+      bind_rows(.id = "severity"))  |> bind_rows(.id = "group") |>
+  mutate(severity = factor(severity, severity_labels),
+         group = factor(group, c("all", "vaccinated", "unvaccinated")))
+
+      
+
+fig_A6 <- conditional_refresh |> 
+  euclid_plot(
+    X = "universality",
+    x_vals = policy_universality_labels,
+    Y = "stringency",
+    y_vals = policy_stringency_labels,
+    Col = "severity",
+    Row = "group")  + xlab("Universality") + ylab("Stringency")
+
+
+fig_A6
+  pdf("results/fig_A6.pdf", height = 10, width = 10)
+fig_A6
+
+```
+
+
+
+## Figure A7: Fitted Values
+
+```{r }
+# create binary indi
+df_long<-df_long %>%
+  dplyr::mutate(
+    refusing = case_when(
+    status == "Refusing"~ 1,
+    TRUE ~ 0),
+    vaccinated = case_when(
+    status == "Vaccinated"~ 1,
+    TRUE ~ 0),
+  ) 
+
+
+fitted_values <- function(Y = "trust", y_lab = "Trust", dff = df_long, adjust = TRUE) {
+  
+  dff$Y <- unlist(dff[Y][1])
+  
+  dff <- 
+    dff %>% dplyr::filter(!is.na(Y)) %>% 
+    mutate(universal_0 = 1*(universality==0),
+           universal_1 = 1*(universality==1),
+           type_numeric = 2 + vaccinated - refusing)
+
+# Y
+pap_analysis_1 <- lm_robust(
+  Y ~ severity*stringency*universality*vaccinated,
+  data = dff, fixed_effects = ~ID, se_type = "stata")  
+
+lows <- dff %>% group_by(ID) %>% 
+  summarize(mean_Y = mean(Y, na.rm = TRUE)) %>% 
+  arrange(mean_Y) %>% slice(1:2)
+
+new_data <- expand.grid(
+  severity = c(-1:1), 
+  stringency = c(-1:1), 
+  universality = c(-1:1), 
+  vaccinated = 0:1) %>% data.frame() %>% 
+  mutate(
+    ID = case_when(
+      vaccinated == 1 ~ lows$ID[1],
+      vaccinated == 0 ~ lows$ID[2]),
+    universal_0 = 1*(universality==0),
+    universal_1 = 1*(universality==1),
+    type = vaccinated,
+    type = factor(vaccinated, 1:0, c("Vaccinated", "Unvaccinated"))) 
+
+means <- dff %>% group_by(vaccinated) %>% 
+  summarize(Y = mean(Y, na.rm = TRUE))
+
+# Add on the fixed effect
+new_data <- new_data %>% 
+  mutate(Y = predict(pap_analysis_1, newdata = new_data))
+
+if(adjust) new_data <- new_data %>% 
+  mutate(Y = Y + means$Y[vaccinated +1] )
+
+new_data %>% 
+  mutate(
+    severity = factor(severity, c(-1,0,1), severity_labels),
+    universality = factor(universality, -1:1, policy_universality_labels))  %>%
+
+  
+ggplot(aes(stringency, Y, color = universality)) +
+  facet_grid(type ~ severity) + geom_point() + geom_line() + #ylim(0,6)+
+  theme_bw()  + ylab(y_lab) + xlab("Severity of stringency") +
+  scale_x_continuous(breaks=c(-.8,.8), labels = c("Least", "Most")) +
+  ylim(0,1)
+
+}
+
+
+```
+
+```{r,fig.height= 11, fig.width = 11}
+fig_A7 <- ggarrange(
+
+  fitted_values("rating", "Policy Rating"),
+  fitted_values("choice", "Probability policy is preferred", adjust = FALSE),
+  fitted_values(),
+  fitted_values("vaccine_probability", y_lab = "Will vaccinate"),
+  common.legend = TRUE, legend="bottom",
+  ncol = 2, nrow = 2)
+  
+  pdf("results/fig_A7.pdf", height = 10, width = 10)
+  fig_A7
+  dev.off()
+  
+  fig_A7
+```
+
+
+
+
+
