@@ -41,3 +41,9 @@ pdf("fig_1.pdf", width = 12, height = 5)
 fig_1_models$Unvaccinated$vaccination <- 
   lm_robust(vaccine_probability ~ severity*universality*stringency,  fixed_effects = ~ ID, 
             data = df_long_all, subset = group == "Unvaccinated", se_type = "stata")
+
+contri_model_1 <- glm(choice ~ severity*universality*stringency, family="binomial", data=df_long_all)
+summary(contri_model_1)
+contri_model_2 <- glm(choice ~ severity+universality+stringency, family="binomial", data=df_long_all)
+summary(contri_model_2)
+anova(contri_model_1, contri_model_2, test = "Chisq")

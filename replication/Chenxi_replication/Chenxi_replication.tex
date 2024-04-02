@@ -1,5 +1,20 @@
 \documentclass{beamer}
 
+\usepackage{xcolor} % define the color
+%\definecolor{mycolor}{HTML}{86A789} % 使用十六进制表示颜色值
+% Choose how your presentation looks.
+%
+% For more themes, color themes and font themes, see:
+% http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
+%
+\mode<presentation>
+{
+  \usetheme{Dresden}
+  \usecolortheme{seagull}
+  \usefonttheme{default}
+  \setbeamertemplate{navigation symbols}{}
+  \setbeamertemplate{caption}[numbered]
+} 
 \usepackage{graphicx} % insert picture
 \usepackage{listings}
 \usepackage{natbib} % Harvard reference format
@@ -44,15 +59,16 @@
 
 \lstset{style=githublight}
 
-\usetheme{metropolis}
+%\usetheme{metropolis}
 \title{Trading Liberties: \\
 Estimating COVID-19 Policy Preferences from Conjoint Data}
 \date{\today}
 \author{Author: Felix Hartmann et al \\
 Replication Author: Chenxi Li}
-\institute{Trinity College Dublin\\College Green, Dublin 2 \\ \par Lic8@tcd.ie}
+\institute{Trinity College Dublin\\College Green, Dublin 2}
 \begin{document}
 \maketitle
+
 \section{Research Background}
 
 \begin{frame}{Research Question}
@@ -86,7 +102,7 @@ Replication Author: Chenxi Li}
 	\noindent In this paper, we have 4 different regression models, which refers to 4 different dependent variables $Y$.
 	\par
 	\begin{itemize}
-		\item[-] $Y_{choice}$: A binary variable measuring which policy the interviewers prefer. And in this case, the author points out 2 policies to choose (0/1).
+		\item[-] $Y_{choice}$: A binary or ordered variable measuring which policy the interviewers prefer. And in this case, the author points out 2 policies to choose (0/1).
 		\item[-] $Y_{rating}$: The rating to these two proposals (0-10).
 		\item[-] $Y_{trust}$: Their trust to the federal government (0-10).
 		\item[-] $Y_{probability}$: The probability of acccepting vaccinated for non-vaccinated interviewers. 
@@ -192,20 +208,56 @@ Replication Author: Chenxi Li}
 \end{frame}
 
 \begin{frame}{Key Conclusions}
-\begin{itemize}
-	\item[-] Severity*Stringency: Citizens strongly prefer more severe policies when conditions are bad. Also we can say, there is a clear evidence that citizens are more supportive of more stringent policies as conditions worsen.
-	\item[-] Greater stringency is associated with greater willingness to vaccinate.
-	\item[-] Severity*Universality: Citizens are still less supportive of universal restrictions (with fewest exemptions) when conditions are bad.
-	\item[-] There is no evidence for interactions between the stringency and universality of conditions or for three-way interactions. 
-\end{itemize}
+	\begin{itemize}
+		\item[-] Severity*Stringency: Citizens strongly prefer more severe policies when conditions are bad. Also we can say, there is a clear evidence that citizens are more supportive of more stringent policies as conditions worsen.
+		\item[-] Greater stringency is associated with greater willingness to vaccinate.
+		\item[-] Severity*Universality: Citizens are still less supportive of universal restrictions (with fewest exemptions) when conditions are bad.
+		\item[-] There is no evidence for interactions between the stringency and universality of conditions or for three-way interactions. 
+	\end{itemize}
+	\end{frame}
 
+\section{My Contribution}
+
+\begin{frame}{Logistic Regression}
+\noindent In this paper, the author used a robust linear regression:
+\lstinputlisting[language=R, basicstyle=\footnotesize, firstline=18, lastline=19]{replication.R}
+And the $R^2$ of this model is poorly 0.01.
 \end{frame}
 
+\begin{frame}{Logistic Regression}
+\noindent But we should notice that the variable \texttt{choice} can be seen as a binary as well, so the logistic regression model should can be used in this case:
+\lstinputlisting[language=R, basicstyle=\footnotesize, firstline=45, lastline=46]{replication.R}
+where we can get AIC value is 114676.
+\par
+\noindent Also, we want to try the logistic model without interactions:
+\lstinputlisting[language=R, basicstyle=\footnotesize, firstline=47, lastline=48]{replication.R}
+where we can get AIC value is 114982.
+\end{frame}
+
+\begin{frame}[fragile]{Logistic Regression}
+	And the ANOVA for these two models shows that:
+	\begin{verbatim}
+		Model 1: choice ~ severity * universality * stringency
+	Model 2: choice ~ severity + universality + stringency
+	  Resid. Df Resid. Dev Df Deviance  Pr(>Chi)    
+	1     82952     114660                          
+	2     82956     114974 -4  -313.99 < 2.2e-16 ***
+	---
+	Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+	\end{verbatim}
+\begin{lstlisting}[language=R, basicstyle=\footnotesize]
+anova(contri_model_1, contri_model_2, test = "Chisq")
+\end{lstlisting}
+We can conclude that, the model 1, which with an interaction, is significantly better than model 2.
+\end{frame}
+
+\begin{frame}
 \bibliographystyle{agsm}
-
-\begin{frame}{Literature List}
 \bibliography{mybibliography}
+\end{frame}
 
+\begin{frame}
+	Thank you for your listening and wish you all the best :)
 \end{frame}
 
 \end{document}
