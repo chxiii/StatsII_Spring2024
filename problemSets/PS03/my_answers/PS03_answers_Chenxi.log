@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.2)  24 MAR 2024 15:57
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023) (preloaded format=pdflatex 2024.2.2)  12 APR 2024 16:01
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -327,7 +327,8 @@ Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
 File: l3backend-pdftex.def 2023-01-16 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count300
 \l__pdf_internal_box=\box58
-) (./PS03_answers_Chenxi.aux)
+)
+No file PS03_answers_Chenxi.aux.
 \openout1 = `PS03_answers_Chenxi.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 66.
@@ -348,7 +349,7 @@ LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 66.
 LaTeX Font Info:    ... okay on input line 66.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 66.
 LaTeX Font Info:    ... okay on input line 66.
- (/usr/local/texlive/2023/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+(/usr/local/texlive/2023/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count301
 \scratchdimen=\dimen184
@@ -369,7 +370,6 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
 \c@lstlisting=\count307
 Package hyperref Info: Link coloring OFF on input line 66.
- (./PS03_answers_Chenxi.out) (./PS03_answers_Chenxi.out)
 \@outlinefile=\write3
 \openout3 = `PS03_answers_Chenxi.out'.
 
@@ -428,48 +428,27 @@ File: lstlang2.sty 2023/02/27 1.9 listings language file
 ) (/usr/local/texlive/2023/texmf-dist/tex/latex/listings/lstlang3.sty
 File: lstlang3.sty 2023/02/27 1.9 listings language file
 )
-Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on input line 103.
- (./PS03_answers_Chenxi.R
-LaTeX Font Info:    Trying to load font information for TS1+cmtt on input line 59.
- (/usr/local/texlive/2023/texmf-dist/tex/latex/base/ts1cmtt.fd
-File: ts1cmtt.fd 2022/07/10 v2.5l Standard LaTeX font definitions
-)) [2] [3] (./PS03_answers_Chenxi.R) [4]
-Underfull \hbox (badness 10000) in paragraph at lines 185--186
 
- []
+! Package Listings Error: File `PS03_answers_Chenxi(.R)' not found.
 
-[5]
-Overfull \hbox (50.88368pt too wide) detected at line 234
-[]
- []
+Type X to quit or <RETURN> to proceed,
+or enter new name. (Default extension: R)
 
+Enter file name: 
+/Users/jerry/StatsII_Spring2024/problemSets/PS03/my_answers/PS03_answers_Chenxi.tex:103: Emergency stop.
+<read *> 
+         
+l.103 ...ne=43,lastline=73]{PS03_answers_Chenxi.R}
+                                                  ^^M
+*** (cannot \read from terminal in nonstop modes)
 
-Overfull \hbox (37.1274pt too wide) in paragraph at lines 237--238
-\T1/cmr/m/n/12 The Z value of \T1/cmtt/m/n/12 competitive.district \T1/cmr/m/n/12 is -0.477, and the p value of \T1/cmtt/m/n/12 competitive.district
- []
-
-[6]
-Overfull \hbox (63.8945pt too wide) in paragraph at lines 248--249
-\T1/cmr/m/n/12 had an av-er-age poverty level (\T1/cmtt/m/n/12 marginality.06 \T1/cmr/m/n/12 = 0), and a PAN gov-er-nor (\T1/cmtt/m/n/12 PAN.governor.06\T1/cmr/m/n/12 =1). 
- []
-
-[7] (./PS03_answers_Chenxi.aux)
-Package rerunfilecheck Info: File `PS03_answers_Chenxi.out' has not changed.
-(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
- ) 
+ 
 Here is how much of TeX's memory you used:
- 13569 strings out of 476025
- 202928 string characters out of 5790018
- 1988388 words of memory out of 5000000
- 33763 multiletter control sequences out of 15000+600000
- 527943 words of font info for 75 fonts, out of 8000000 for 9000
+ 12453 strings out of 476025
+ 191325 string characters out of 5790018
+ 1860388 words of memory out of 5000000
+ 32738 multiletter control sequences out of 15000+600000
+ 524806 words of font info for 69 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,10n,76p,899b,2284s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfbx1728.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm0600.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm1440.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfrm2074.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sfti1200.pfb></usr/local/texlive/2023/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb>
-Output written on PS03_answers_Chenxi.pdf (7 pages, 216837 bytes).
-PDF statistics:
- 197 PDF objects out of 1000 (max. 8388607)
- 158 compressed objects within 2 object streams
- 75 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
-
+ 75i,6n,76p,873b,433s stack positions out of 10000i,1000n,20000p,200000b,200000s
+/Users/jerry/StatsII_Spring2024/problemSets/PS03/my_answers/PS03_answers_Chenxi.tex:103:  ==> Fatal error occurred, no output PDF file produced!
