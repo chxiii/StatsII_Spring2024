@@ -1,0 +1,5 @@
+\beamer@sectionintoc {1}{Research Background}{2}{0}{1}
+\beamer@sectionintoc {2}{Variables Introduction}{5}{0}{2}
+\beamer@sectionintoc {3}{Research Approach}{8}{0}{3}
+\beamer@sectionintoc {4}{Results Visualisation}{14}{0}{4}
+\beamer@sectionintoc {5}{My Contribution}{17}{0}{5}
